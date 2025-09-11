@@ -11,7 +11,7 @@ def bsm(s0, r, q, sigma, t):
     return round(s0*exp((r-q-0.5*sigma**2)*t+z*sigma*t**0.5), 2)
 
 
-def simulation(simulation_time=10, s0=156.7, r=0.0015, q= 0.0233,sigma=0.282, t=0.5, sp=150, T=1):
+def simulation(simulation_time=10, s0=156.7, r=0.0015, q= 0.0233, sigma=0.282, t=0.5, sp=150, T=1):
     
     st_list=[[''for _ in range(4)]for _ in range(simulation_time)]
     # [[starting price, choice CALL/PUT, current price, current value] * simulation_time]
@@ -20,7 +20,7 @@ def simulation(simulation_time=10, s0=156.7, r=0.0015, q= 0.0233,sigma=0.282, t=
     for i in range(simulation_time):
         st_list[i][0] = bsm(s0, r, q, sigma, t)
 
-        st_list[i][1] = 'CALL' if st_list[i][0] >150 else 'PUT' 
+        st_list[i][1] = 'CALL' if st_list[i][0] > sp else 'PUT' 
 
         st_list[i][2] = bsm(st_list[i][0], r, q, sigma, t)
 
@@ -35,23 +35,15 @@ def simulation(simulation_time=10, s0=156.7, r=0.0015, q= 0.0233,sigma=0.282, t=
         else:
             pt_list.append(row)
 
-    return (ct_list, pt_list)
+    return ct_list, pt_list
 
-
-def option_value(st_list, r=0.0015, T=1.0):
-    count, sum = 0, 0
-    for row in st_list:
-        sum += row[3]
-        count += 1
-    try:
-        average_current_value = sum/count
-    except:
-        average_current_value = 0
-    return average_current_value
-
+def option_value(st_list):
+    if len(st_list) == 0:
+        return 0
+    st_list = transpose(st_list)
+    return np.mean(st_list[3])
 
 simulation_time=100000
-
 
 ct_list, pt_list = simulation(simulation_time=simulation_time)
 ct_list, pt_list = transpose(ct_list), transpose(pt_list)
@@ -98,7 +90,6 @@ for i in range(50, 450):
     pt_option_price = option_value(pt_list)
     pt_list_sp.append([pt_option_price, sp])
 
-
 ct_list_sp, pt_list_sp = transpose(ct_list_sp), transpose(pt_list_sp)
 # [[option value], [sp]]
 
@@ -108,7 +99,7 @@ plt.scatter(x=pt_list_sp[1], y=pt_list_sp[0], c='#fcc01e')
 plt.xlabel('Strike Price')
 plt.ylabel('Option Value')
 plt.title('Sensitivity Analysis on the Strike Price')
-plt.savefig('figs/Sensitivity Analysis on the the Strike Price.png')
+plt.savefig('figs/Sensitivity Analysis on the Strike Price.png')
 plt.clf()
 
 
