@@ -10,5 +10,6 @@ https://pdfs.semanticscholar.org/3022/12a91cd5d30878ef132a8636b165b5973c8a.pdf
 ├── .gitignore                                              # Git 忽略文件
 ├── README.md                                               # 项目说明文件
 ├── Exploration of JPMorgan Chooser Option Pricing.pdf      # paper原文
+├── fig/                                                    # 数据图集
 └── BSM.py                                                  # 源代码
 ```
