@@ -43,7 +43,7 @@ def option_value_vectorized(st_list):
     return np.mean(st_list[:, -1].astype(float))
 
 def sensitivity_analysis_vectorized(param_name, param_range, simulation_time=100000, 
-                                     ct_color='#ea7e36', pt_color='#fcc01e', figsize=(10, 6)):
+                                     ct_color='#ea7e36', pt_color='#fcc01e', figsize=(10, 6), filename=None):
     labels = {
         'sigma': ('Volatility (sigma)', 'Sensitivity Analysis on Sigma'),
         'sp': ('Strike Price', 'Sensitivity Analysis on the Strike Price'),
@@ -55,7 +55,8 @@ def sensitivity_analysis_vectorized(param_name, param_range, simulation_time=100
         raise ValueError("参数名称必须是 'sigma', 'sp', 'r' 或 'q'")
     
     xlabel, title = labels[param_name]
-    filename = f'{title.replace(" ", "_")}.png'
+    if filename == None:
+        filename = f'{title.replace(" ", "_")}.png'
     
     ct_option_prices, pt_option_prices = [], []
     
@@ -78,7 +79,7 @@ def sensitivity_analysis_vectorized(param_name, param_range, simulation_time=100
     plt.ylabel('Option Value')
     plt.title(title)
     plt.legend()
-    plt.savefig(f'figs_test/{filename}')
+    plt.savefig(f'figs/{filename}')
     plt.clf()
     
     return np.array(ct_option_prices), np.array(pt_option_prices)
@@ -95,7 +96,7 @@ plt.xlabel('Stock Price at Maturity ($)')
 plt.ylabel('Option Payoff ($)')
 plt.title('The 2nd Six-month Stock Price vs. Payoff')
 plt.legend()
-plt.savefig('figs_test/The_2nd_Six-month_Stock_Price_vs._Payoff.png')
+plt.savefig('figs/The_2nd_Six-month_Stock_Price_vs._Payoff.png')
 plt.clf()
 
 # 对sigma进行敏感性分析
