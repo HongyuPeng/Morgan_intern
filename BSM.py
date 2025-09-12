@@ -13,15 +13,16 @@ def simulation_vectorized(simulation_time=10, s0=156.7, r=0.0015, q=0.0233, sigm
     
     option_type = np.where(st > sp, 'CALL', 'PUT')
 
-    d1 = (np.log(st / sp) + (r - q + 0.5 * sigma**2) * t) / (sigma * np.sqrt(t))
-    d2 = d1 - sigma * np.sqrt(t)
+    dt = T - t
+    d1 = (np.log(st / sp) + (r - q + 0.5 * sigma**2) * dt / (sigma * np.sqrt(dt)))
+    d2 = d1 - sigma * np.sqrt(dt)
 
     call_mask = (option_type == 'CALL')
     put_mask = (option_type == 'PUT')
 
     analytical_values = np.zeros(simulation_time)
-    analytical_values[call_mask] = st[call_mask] * np.exp(-q * t) * norm.cdf(d1[call_mask]) - sp * np.exp(-r * t) * norm.cdf(d2[call_mask])
-    analytical_values[put_mask] = sp * np.exp(-r * t) * norm.cdf(-d2[put_mask]) - st[put_mask] * np.exp(-q * t) * norm.cdf(-d1[put_mask])
+    analytical_values[call_mask] = st[call_mask] * np.exp(-q * dt) * norm.cdf(d1[call_mask]) - sp * np.exp(-r * dt) * norm.cdf(d2[call_mask])
+    analytical_values[put_mask] = sp * np.exp(-r * dt) * norm.cdf(-d2[put_mask]) - st[put_mask] * np.exp(-q * dt) * norm.cdf(-d1[put_mask])
 
     st_2 = bsm_vectorized(st, r, q, sigma, t, simulation_time)
 
@@ -56,7 +57,7 @@ def sensitivity_analysis_vectorized(param_name, param_range, simulation_time=100
     
     xlabel, title = labels[param_name]
     if filename == None:
-        filename = f'{title.replace(" ", "_")}.png'
+        filename = f'figs/{title.replace(" ", "_")}.png'
     
     ct_option_prices, pt_option_prices = [], []
     
@@ -79,7 +80,7 @@ def sensitivity_analysis_vectorized(param_name, param_range, simulation_time=100
     plt.ylabel('Option Value')
     plt.title(title)
     plt.legend()
-    plt.savefig(f'figs/{filename}')
+    plt.savefig(filename)
     plt.clf()
     
     return np.array(ct_option_prices), np.array(pt_option_prices)
