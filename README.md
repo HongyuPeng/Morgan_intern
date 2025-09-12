@@ -15,6 +15,6 @@ https://pdfs.semanticscholar.org/3022/12a91cd5d30878ef132a8636b165b5973c8a.pdf
 ```
 
 ## 项目进度
-论文都复现完成了，现在有两个问题：
-一是变量分析的几张图有噪声没有论文中那么干净
-二是Sensitivity analysis on the strike price这张图有很大的问题，如果将BSM.py的23行中的sp替换为150则可以跑出和论文中一致的图（保存在fig/Sensitivity Analysis on the Strike Price_WRONG.png中）而现有的BSM.py则会跑出fig/Sensitivity Analysis on the Strike Price.png，明显不一致
+论文复现完成了，现在有一个问题：
+figs\Sensitivity_Analysis_on_Sigma.png与原论文中的图3不一致
+![alt text](figs/fig3.png)
