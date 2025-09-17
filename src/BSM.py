@@ -57,7 +57,7 @@ def sensitivity_analysis_vectorized(param_name, param_range, simulation_time=100
     
     xlabel, title = labels[param_name]
     if filename == None:
-        filename = f'figs/{title.replace(" ", "_")}.png'
+        filename = f'data/output/images/{title.replace(" ", "_")}.png'
     
     ct_option_prices, pt_option_prices = [], []
     
@@ -85,33 +85,34 @@ def sensitivity_analysis_vectorized(param_name, param_range, simulation_time=100
     
     return np.array(ct_option_prices), np.array(pt_option_prices)
 
-# 参数设置
-simulation_time = 1000000
+if __name__ == '__main__':
+    # 参数设置
+    simulation_time = 1000000
 
-# The 2nd Six-month Stock Price vs. Payoff
-ct_list, pt_list = simulation_vectorized(simulation_time=simulation_time)
-plt.figure(figsize=(10, 6))
-plt.scatter(x=ct_list[:, 2].astype(float), y=ct_list[:, 3].astype(float), c='#ea7e36', label='Call Option')
-plt.scatter(x=pt_list[:, 2].astype(float), y=pt_list[:, 3].astype(float), c='#fcc01e', label='Put Option')
-plt.xlabel('Stock Price at Maturity ($)')
-plt.ylabel('Option Payoff ($)')
-plt.title('The 2nd Six-month Stock Price vs. Payoff')
-plt.legend()
-plt.savefig('figs/The_2nd_Six-month_Stock_Price_vs._Payoff.png')
-plt.clf()
+    # The 2nd Six-month Stock Price vs. Payoff
+    ct_list, pt_list = simulation_vectorized(simulation_time=simulation_time)
+    plt.figure(figsize=(10, 6))
+    plt.scatter(x=ct_list[:, 2].astype(float), y=ct_list[:, 3].astype(float), c='#ea7e36', label='Call Option')
+    plt.scatter(x=pt_list[:, 2].astype(float), y=pt_list[:, 3].astype(float), c='#fcc01e', label='Put Option')
+    plt.xlabel('Stock Price at Maturity ($)')
+    plt.ylabel('Option Payoff ($)')
+    plt.title('The 2nd Six-month Stock Price vs. Payoff')
+    plt.legend()
+    plt.savefig('data/output/images/The_2nd_Six-month_Stock_Price_vs._Payoff.png')
+    plt.clf()
+            
+    # 对sigma进行敏感性分析     
+    sigma_range = [i/100 for i in range(10, 90)]
+    ct_sigma, pt_sigma = sensitivity_analysis_vectorized('sigma', sigma_range, simulation_time)
 
-# 对sigma进行敏感性分析
-sigma_range = [i/100 for i in range(10, 90)]
-ct_sigma, pt_sigma = sensitivity_analysis_vectorized('sigma', sigma_range, simulation_time)
+    # 对strike price进行敏感性分析
+    sp_range = [i for i in range(50, 450)]
+    ct_sp, pt_sp = sensitivity_analysis_vectorized('sp', sp_range, simulation_time)
 
-# 对strike price进行敏感性分析
-sp_range = [i for i in range(50, 450)]
-ct_sp, pt_sp = sensitivity_analysis_vectorized('sp', sp_range, simulation_time)
+    # 对risk-free rate进行敏感性分析
+    r_range = [i/1000 for i in range(0, 80)]
+    ct_r, pt_r = sensitivity_analysis_vectorized('r', r_range, simulation_time)
 
-# 对risk-free rate进行敏感性分析
-r_range = [i/1000 for i in range(0, 80)]
-ct_r, pt_r = sensitivity_analysis_vectorized('r', r_range, simulation_time)
-
-# 对dividend rate进行敏感性分析
-q_range = [i/1000 for i in range(0, 80)]
-ct_q, pt_q = sensitivity_analysis_vectorized('q', q_range, simulation_time)
+    # 对dividend rate进行敏感性分析
+    q_range = [i/1000 for i in range(0, 80)]
+    ct_q, pt_q = sensitivity_analysis_vectorized('q', q_range, simulation_time)

@@ -43,3 +43,11 @@ node_modules/
 # 忽略文件名或文件夹名包含 'test' 的文件或文件夹
 *test*
 
+# 忽略已归档文件
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.tar.bz2
+*.tar.xz
+

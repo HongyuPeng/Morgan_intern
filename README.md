@@ -15,7 +15,5 @@ https://pdfs.semanticscholar.org/3022/12a91cd5d30878ef132a8636b165b5973c8a.pdf
 ```
 
 ## 项目进度
-论文复现完成了，现在有一个问题：
-figs\Sensitivity_Analysis_on_Sigma.png与原论文中的图3不太一样
-![alt text](figs/Sensitivity_Analysis_on_Sigma.png)
-![alt text](figs/fig3.png)
+论文复现已完成
+搜集真实市场数据中
