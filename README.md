@@ -7,13 +7,15 @@ https://pdfs.semanticscholar.org/3022/12a91cd5d30878ef132a8636b165b5973c8a.pdf
 
 ## 文件结构
 ```
-├── .gitignore                                              # Git 忽略文件
-├── README.md                                               # 项目说明文件
+├── .gitignore                   # Git 忽略文件
+├── README.md                    # 项目说明文件
 ├── Exploration of JPMorgan Chooser Option Pricing.pdf      # paper原文
-├── fig/                                                    # 数据图集
-└── BSM.py                                                  # 源代码
+├── data                         # 数据文件夹
+│   ├── input                    # 存放输入数据，例如市场数据
+│   └── output                   # 存放输出结果，例如分析图表和模型结果
+└── src                          # 项目代码
 ```
 
 ## 项目进度
 论文复现已完成
-搜集真实市场数据中
+使用真实市场数据替换论文数据已完成
