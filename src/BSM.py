@@ -120,7 +120,7 @@ def simulation(simulation_time=10, base_params = None):
 def option_value_vectorized(st_list):
     if st_list.size == 0:
         return 0
-    return np.mean(st_list[:, -1].astype(float))
+    return np.mean(st_list[:, -2].astype(float))
 
 def sensitivity_analysis(param_name, param_range, simulation_time=100000, base_params=None,
                          ct_color='#ea7e36', pt_color='#fcc01e', 
