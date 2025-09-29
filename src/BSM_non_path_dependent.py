@@ -30,7 +30,7 @@ def simulation(simulation_time=10, base_params = None):
         波动率，默认为0.282
     t: float, 可选
         第一个到期时间点（年），默认为0.5
-    sp: float, 可选
+    K: float, 可选
         执行价格，默认为150
     T: float, 可选
         总到期时间（年），默认为1
@@ -72,7 +72,7 @@ def simulation(simulation_time=10, base_params = None):
         'q': 0.0233,
         'sigma': 0.282,
         't': 0.5,
-        'sp': 150,
+        'K': 150,
         'T': 1
     }
     
@@ -84,33 +84,33 @@ def simulation(simulation_time=10, base_params = None):
     r = default_params['r']
     q = default_params['q']
     sigma = default_params['sigma']
-    sp = default_params['sp']
+    K = default_params['K']
     t = default_params['t']
     T = default_params['T']
 
     st = bsm_vectorized(s0, r, q, sigma, t, simulation_time)
     
-    option_type = np.where(st > sp, 'CALL', 'PUT')
+    option_type = np.where(st > K, 'CALL', 'PUT')
 
     dt = T - t
-    d1 = (np.log(st / sp) + (r - q + 0.5 * sigma**2) * dt / (sigma * np.sqrt(dt)))
+    d1 = (np.log(st / K) + (r - q + 0.5 * sigma**2) * dt) / (sigma * np.sqrt(dt))
     d2 = d1 - sigma * np.sqrt(dt)
 
     call_mask = (option_type == 'CALL')
     put_mask = (option_type == 'PUT')
 
     analytical_values = np.zeros(simulation_time)
-    analytical_values[call_mask] = st[call_mask] * np.exp(-q * dt) * norm.cdf(d1[call_mask]) - sp * np.exp(-r * dt) * norm.cdf(d2[call_mask])
-    analytical_values[put_mask] = sp * np.exp(-r * dt) * norm.cdf(-d2[put_mask]) - st[put_mask] * np.exp(-q * dt) * norm.cdf(-d1[put_mask])
+    analytical_values[call_mask] = st[call_mask] * np.exp(-q * dt) * norm.cdf(d1[call_mask]) - K * np.exp(-r * dt) * norm.cdf(d2[call_mask])
+    analytical_values[put_mask] = K * np.exp(-r * dt) * norm.cdf(-d2[put_mask]) - st[put_mask] * np.exp(-q * dt) * norm.cdf(-d1[put_mask])
 
-    st_2 = bsm_vectorized(st, r, q, sigma, t, simulation_time)
+    st_2 = bsm_vectorized(st, r, q, sigma, dt, simulation_time)
 
-    future_payoff_call = np.maximum(st_2[call_mask] - sp, 0)
-    future_payoff_put = np.maximum(sp - st_2[put_mask], 0)
+    future_payoff_call = np.maximum(st_2[call_mask] - K, 0)
+    future_payoff_put = np.maximum(K - st_2[put_mask], 0)
     
     numerical_values = np.zeros(simulation_time)
-    numerical_values[call_mask] = future_payoff_call * np.exp(-r * T)
-    numerical_values[put_mask] = future_payoff_put * np.exp(-r * T)
+    numerical_values[call_mask] = future_payoff_call * np.exp(-r * dt)
+    numerical_values[put_mask] = future_payoff_put * np.exp(-r * dt)
 
     ct_list = np.column_stack([st[call_mask], option_type[call_mask], st_2[call_mask], numerical_values[call_mask], analytical_values[call_mask]])
     pt_list = np.column_stack([st[put_mask], option_type[put_mask], st_2[put_mask], numerical_values[put_mask], analytical_values[put_mask]])
@@ -120,7 +120,7 @@ def simulation(simulation_time=10, base_params = None):
 def option_value_vectorized(st_list):
     if st_list.size == 0:
         return 0
-    return np.mean(st_list[:, -2].astype(float))
+    return np.mean(st_list[:, -1].astype(float))
 
 def sensitivity_analysis(param_name, param_range, simulation_time=100000, base_params=None,
                          ct_color='#ea7e36', pt_color='#fcc01e', 
@@ -130,7 +130,7 @@ def sensitivity_analysis(param_name, param_range, simulation_time=100000, base_p
     
     参数:
     param_name: str
-        要分析的参数名称，可选值: 'sigma', 'sp', 'r', 'q', 's0', 't', 'T'
+        要分析的参数名称，可选值: 'sigma', 'K', 'r', 'q', 's0', 't', 'T'
     param_range: array-like
         参数值的范围，用于分析该参数对期权价格的影响
     simulation_time: int, 可选
@@ -167,7 +167,7 @@ def sensitivity_analysis(param_name, param_range, simulation_time=100000, base_p
         'q': 0.0233,
         'sigma': 0.282,
         't': 0.5,
-        'sp': 150,
+        'K': 150,
         'T': 1
     }
     
@@ -177,7 +177,7 @@ def sensitivity_analysis(param_name, param_range, simulation_time=100000, base_p
     
     labels = {
         'sigma': ('Volatility (sigma)', 'Sensitivity Analysis on Sigma'),
-        'sp': ('Strike Price', 'Sensitivity Analysis on the Strike Price'),
+        'K': ('Strike Price', 'Sensitivity Analysis on the Strike Price'),
         'r': ('Risk-free Interest Rate', 'Sensitivity Analysis on the Risk-free Rate'),
         'q': ('Dividend Rate', 'Sensitivity Analysis on the Dividend Rate'),
         's0': ('Initial Stock Price', 'Sensitivity Analysis on Initial Stock Price'),
@@ -186,7 +186,7 @@ def sensitivity_analysis(param_name, param_range, simulation_time=100000, base_p
     }
     
     if param_name not in labels:
-        raise ValueError("参数名称必须是 'sigma', 'sp', 'r', 'q', 's0', 't' 或 'T'")
+        raise ValueError("参数名称必须是 'sigma', 'K', 'r', 'q', 's0', 't' 或 'T'")
     
     xlabel, title = labels[param_name]
     
@@ -253,8 +253,8 @@ if __name__ == '__main__':
     ct_sigma, pt_sigma = sensitivity_analysis('sigma', sigma_range, simulation_time)
 
     # 对strike price进行敏感性分析
-    sp_range = [i for i in range(50, 450)]
-    ct_sp, pt_sp = sensitivity_analysis('sp', sp_range, simulation_time)
+    K_range = [i for i in range(50, 450)]
+    ct_K, pt_K = sensitivity_analysis('K', K_range, simulation_time)
 
     # 对risk-free rate进行敏感性分析
     r_range = [i/1000 for i in range(0, 80)]
@@ -267,7 +267,7 @@ if __name__ == '__main__':
 
     # Alterative Data
     params = calculate_jpm_metrics('2023-8-23', '2024-8-23')
-    params['sp'] = round(params['s0'], -1)
+    params['K'] = round(params['s0'], -1)
 
     # The 2nd Six-month Stock Price vs. Payoff
     ct_list, pt_list = simulation(simulation_time=simulation_time, base_params=params)
@@ -286,8 +286,8 @@ if __name__ == '__main__':
     ct_sigma, pt_sigma = sensitivity_analysis('sigma', sigma_range, simulation_time, base_params=params,foldername='data/output/images/2023-2024')
 
     # 对strike price进行敏感性分析
-    sp_range = [i for i in range(50, 450)]
-    ct_sp, pt_sp = sensitivity_analysis('sp', sp_range, simulation_time, base_params=params,foldername='data/output/images/2023-2024')
+    K_range = [i for i in range(50, 450)]
+    ct_K, pt_K = sensitivity_analysis('K', K_range, simulation_time, base_params=params,foldername='data/output/images/2023-2024')
 
     # 对risk-free rate进行敏感性分析
     r_range = [i/1000 for i in range(0, 80)]
