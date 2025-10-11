@@ -18,4 +18,4 @@ https://pdfs.semanticscholar.org/3022/12a91cd5d30878ef132a8636b165b5973c8a.pdf
 ```
 
 ## 项目进度
-JPM是路径依赖，需要做出调整
+BSM_ML 无法正确推广
