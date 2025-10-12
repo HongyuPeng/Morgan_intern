@@ -22,7 +22,7 @@ def calculate_jpm_metrics(start_date=None, end_date=None):
     dividend_data['Date'] = pd.to_datetime(dividend_data['Date'])
     
     # 读取美债数据（日期降序排列）
-    treasury_data = pd.read_csv('data\input\excel\T1YFF.csv')
+    treasury_data = pd.read_csv('data\input\excel\DGS1.csv')
     treasury_data['Date'] = pd.to_datetime(treasury_data['Date'])
     
     # 将所有数据按日期升序排列
@@ -67,7 +67,7 @@ def calculate_jpm_metrics(start_date=None, end_date=None):
     dividend_yield = (latest_dividend * 4) / latest_price if latest_dividend > 0 else 0
     
     # 计算无风险利率（年化，转换为小数形式）
-    risk_free_rate = treasury_data['T1YFF'].mean() / 100
+    risk_free_rate = treasury_data['DGS1'].iloc[-1] / 100
     
     return {
         'sigma': round(volatility, 4),

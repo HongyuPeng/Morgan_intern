@@ -40,8 +40,8 @@ node_modules/
 *.key
 *.pem
 
-# 忽略文件名或文件夹名包含 'test' 的文件或文件夹
-*test*
+# 忽略文件名或文件夹名包含 'hide' 的文件或文件夹
+*hide*
 
 # 忽略已归档文件
 *.zip
