@@ -246,4 +246,4 @@ pip install -r requirements.txt --no-cache-dir --upgrade
 如有讨论、合作或研究需求，欢迎联系：
 
 - Email: *hongyustevenpeng@gmail.com*
-- GitHub: *HongyuPeng*
+- GitHub: [*HongyuPeng*](https://github.com/HongyuPeng/)
