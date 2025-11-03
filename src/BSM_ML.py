@@ -12,6 +12,17 @@ import joblib
 import matplotlib.pyplot as plt
 from datetime import datetime
 
+
+# ==== 路径与环境设置 / Path & Environment Setup ====
+current_file = os.path.abspath(__file__)
+project_root = os.path.dirname(os.path.dirname(current_file))
+import sys
+sys.path.insert(0, project_root)
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'  # 指定 GPU 设备 (Set CUDA device)
+
+# ==== 自定义模块导入 / Import Custom Modules ====
+from src.param_calculator import calculate_rolling_periods
+
 # ==========================================================
 # 1️⃣ 基础函数 (Monte Carlo Path Simulation & Payoff)
 # ==========================================================
@@ -108,41 +119,80 @@ def create_robust_features(paths, s0, K, params_array):
 
     return features.astype(np.float32)
 
-
 # ==========================================================
 # 3️⃣ 数据生成策略
 # ==========================================================
-def simple_improved_data_generation(n_total_paths=400000):
-    """批量生成带参数随机化的训练数据."""
-    n_batches = 50
+
+def generate_training_data_with_modes(n_total_paths=400000, 
+                                     banks=['GS', 'BAC', 'WFC', 'C', 'MS'],
+                                     data_mode='mixed',
+                                     enhanced=False):
+    """
+    精简版多银行数据生成器
+    
+    参数:
+    n_total_paths: 总路径数
+    banks: 银行列表
+    data_mode: 数据模式 - 'historical_only', 'synthetic_only', 'mixed'
+    enhanced: 是否使用增强历史数据（添加扰动）
+    """
+    n_batches = 100
     paths_per_batch = n_total_paths // n_batches
-
+    
+    # 确定批次分配
+    if data_mode == 'historical_only':
+        hist_batches, rand_batches = 100, 0
+    elif data_mode == 'synthetic_only':
+        hist_batches, rand_batches = 0, 100
+    else:  # mixed
+        hist_batches, rand_batches = 50, 50
+    
+    print(f"模式: {data_mode}, 历史批次: {hist_batches}, 随机批次: {rand_batches}")
+    
     all_X, all_y, all_params = [], [], []
-
-    for i in range(n_batches):
-        s0 = float(np.random.uniform(90, 250))
-        moneyness = np.random.uniform(0.9, 1.1)
-        K = s0 * moneyness
-        r = float(np.random.uniform(0.0001, 0.055))
-
-        # 随机股息率分布
-        rand = np.random.random()
-        if rand < 0.1:
-            q = 0.0
-        elif rand < 0.7:
-            q = float(np.random.uniform(0.0, 0.04))
+    
+    # 加载历史数据
+    historical_batches = []
+    if hist_batches > 0:
+        for bank in banks:
+            try:
+                data = calculate_rolling_periods(bank)
+                if not data.empty:
+                    # 简单采样，每个银行至少分配一些批次
+                    samples = data.sample(min(len(data), hist_batches//len(banks)+1), 
+                                         replace=True, random_state=42)
+                    for _, row in samples.iterrows():
+                        historical_batches.append((bank, row))
+                    print(f"✅ {bank}: {len(samples)}条数据")
+            except Exception as e:
+                print(f"❌ {bank}加载失败: {e}")
+    
+    # 生成历史数据批次
+    for i in range(min(hist_batches, len(historical_batches))):
+        bank, row = historical_batches[i]
+        
+        if enhanced:
+            # 增强模式：添加扰动
+            s0 = float(row['s0']) * np.random.uniform(0.95, 1.05)
+            sigma = max(0.05, float(row['sigma']) * np.random.uniform(0.9, 1.1))
+            q = max(0.0, float(row['q']) * np.random.uniform(0.8, 1.2))
+            r = max(0.001, float(row['r']) * np.random.uniform(0.9, 1.1))
         else:
-            q = float(np.random.uniform(0.04, 0.1))
-
-        sigma = float(np.random.uniform(0.1, 0.5))
+            # 普通模式：直接使用历史数据
+            s0 = float(row['s0'])
+            sigma = float(row['sigma'])
+            q = float(row['q'])
+            r = float(row['r'])
+        
+        # 随机化其他参数
+        K = s0 * np.random.uniform(0.9, 1.1)
         T = float(np.random.uniform(0.8, 1.2))
-        choice_frac = float(np.random.uniform(0.4, 0.6))
-        choice_date = T * choice_frac
-
+        choice_date = T * np.random.uniform(0.4, 0.6)
+        
         params = dict(s0=s0, K=K, r=r, q=q, sigma=sigma, T=T,
                       n_steps=252, n_paths=paths_per_batch,
                       option_type='asian', choice_date=choice_date)
-
+        
         try:
             paths, payoffs, params_array = generate_training_data(**params)
             features = create_robust_features(paths, s0, K, params_array)
@@ -150,7 +200,40 @@ def simple_improved_data_generation(n_total_paths=400000):
             all_y.append(payoffs)
             all_params.append(params_array)
         except Exception as e:
-            print(f"批次 {i} 失败: {e}")
+            print(f"历史批次 {i} 失败: {e}")
+            continue
+    
+    # 生成随机数据批次
+    for i in range(rand_batches + max(0, hist_batches - len(historical_batches))):
+        s0 = float(np.random.uniform(90, 250))
+        K = s0 * np.random.uniform(0.9, 1.1)
+        r = float(np.random.uniform(0.0001, 0.055))
+        
+        # 随机股息率
+        rand = np.random.random()
+        if rand < 0.1:
+            q = 0.0
+        elif rand < 0.7:
+            q = float(np.random.uniform(0.0, 0.04))
+        else:
+            q = float(np.random.uniform(0.04, 0.1))
+            
+        sigma = float(np.random.uniform(0.1, 0.5))
+        T = float(np.random.uniform(0.8, 1.2))
+        choice_date = T * np.random.uniform(0.4, 0.6)
+        
+        params = dict(s0=s0, K=K, r=r, q=q, sigma=sigma, T=T,
+                      n_steps=252, n_paths=paths_per_batch,
+                      option_type='asian', choice_date=choice_date)
+        
+        try:
+            paths, payoffs, params_array = generate_training_data(**params)
+            features = create_robust_features(paths, s0, K, params_array)
+            all_X.append(features)
+            all_y.append(payoffs)
+            all_params.append(params_array)
+        except Exception as e:
+            print(f"随机批次 {i} 失败: {e}")
             continue
 
     if not all_X:
@@ -159,9 +242,9 @@ def simple_improved_data_generation(n_total_paths=400000):
     X = np.concatenate(all_X)
     y = np.concatenate(all_y)
     params = np.concatenate(all_params)
+    
     print(f"✅ 成功生成 {X.shape[0]} 条样本")
     return X, y, params
-
 
 # ==========================================================
 # 4️⃣ 自定义变换与损失函数
@@ -227,6 +310,7 @@ def build_improved_mlp(input_dim):
 # ==========================================================
 # 6️⃣ 主训练流程
 # ==========================================================
+
 if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     physical_devices = tf.config.list_physical_devices('GPU')
@@ -238,7 +322,7 @@ if __name__ == '__main__':
 
     try:
         print("\n=== Step 1: 数据生成 ===")
-        X, y, params = simple_improved_data_generation(300000)
+        X, y, params = generate_training_data_with_modes(enhanced=True)
 
         print("\n=== Step 2: 数据集划分 ===")
         X_temp, X_test, y_temp, y_test = train_test_split(X, y, test_size=0.15, random_state=42)
@@ -266,12 +350,11 @@ if __name__ == '__main__':
 
         print("\n=== Step 5: 模型训练 ===")
         timestamp = datetime.now().strftime("%m%d_%H%M")
-        os.makedirs(f'models/{timestamp}', exist_ok=True)
 
         history = model.fit(
             X_train_s, y_train,
             validation_data=(X_val_s, y_val),
-            epochs=200,
+            epochs=400,
             batch_size=512,
             shuffle=True,
             verbose=1,

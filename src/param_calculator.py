@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
-def calculate_jpm_metrics(start_date=None, end_date=None):
+def calculate_jpm_metrics(start_date=None, end_date=None, alt_bank=None):
     """
     计算JPM股价的波动率、股息率和无风险利率
     
@@ -13,17 +14,19 @@ def calculate_jpm_metrics(start_date=None, end_date=None):
     返回:
     dict: 包含波动率、股息率、无风险利率和相关数据的字典
     """
+    bank = 'JPM' if alt_bank is None else f'alt_bank/{alt_bank}'
     # 读取股价数据（日期降序排列）
-    price_data = pd.read_csv('data\input\excel\JPM_ historial_data.csv')
+    price_data = pd.read_csv(f'data/input/excel/{bank}.csv')
     price_data['Date'] = pd.to_datetime(price_data['Date'])
     
     # 读取股息数据（日期降序排列）
-    dividend_data = pd.read_csv('data\input\excel\JPM_dividend.csv')
-    dividend_data['Date'] = pd.to_datetime(dividend_data['Date'])
+    dividend_data = pd.read_csv(f'data/input/excel/{bank}_Dividend.csv')
+    dividend_data['Date'] = pd.to_datetime(dividend_data['Date'], format='%m月 %d, %Y')
     
     # 读取美债数据（日期降序排列）
     treasury_data = pd.read_csv('data\input\excel\DGS1.csv')
     treasury_data['Date'] = pd.to_datetime(treasury_data['Date'])
+    treasury_data = treasury_data.dropna()
     
     # 将所有数据按日期升序排列
     price_data = price_data.sort_values('Date').reset_index(drop=True)
@@ -76,11 +79,63 @@ def calculate_jpm_metrics(start_date=None, end_date=None):
         'r': round(risk_free_rate, 4)
     }
 
+def calculate_rolling_periods(bank):
+    """
+    计算2018/01/15到2025/01/15之间每半年开始的一年期间的数据
+    返回包含所有期间结果的DataFrame
+    """
+    # 生成半年度开始日期
+    start_dates = pd.date_range('2016-01-15', '2024-07-15', freq='6ME')
+    
+    results = []
+    
+    for start_date in start_dates:
+        # 计算一年期间的结束日期
+        end_date = start_date + relativedelta(years=1)
+            
+        # 计算该期间的指标
+        period_result = calculate_jpm_metrics(
+            start_date=start_date.strftime('%Y-%m-%d'),
+            end_date=end_date.strftime('%Y-%m-%d'),
+            alt_bank=bank
+        )
+        
+        # 如果计算成功，添加到结果列表
+        if 'error' not in period_result:
+            period_result['period_end'] = end_date
+            results.append(period_result)
+    
+    # 创建DataFrame
+    if results:
+        df_results = pd.DataFrame(results)
+        df_results.set_index('period_end', inplace=True)
+        # 只保留需要的列
+        df_results = df_results[['sigma', 'q', 's0', 'r']]
+        return df_results
+    else:
+        return pd.DataFrame(columns=['sigma', 'q', 's0', 'r'])
+
 # 示例用法
 if __name__ == "__main__":
     # 计算特定时间范围的指标
     print("\n2023-2024年结果:")
-    results = calculate_jpm_metrics('2023-8-23', '2024-8-23')
-    print(f"年化波动率: {results['sigma']}")
-    print(f"年化股息率: {results['q']*100:.2f}%")
-    print(f"无风险利率: {results['r']*100:.2f}%")
+    # results = calculate_jpm_metrics('2020-8-15', '2021-2-15') 
+    # print(f"年化波动率: {results['sigma']}")
+    # print(f"年化股息率: {results['q']*100:.2f}%")
+    # print(f"无风险利率: {results['r']*100:.2f}%")
+
+    # print("\n2023-2024年结果:")
+    # results = calculate_jpm_metrics('2020-8-15', '2021-2-15', alt_bank='WFC') 
+    # print(f"年化波动率: {results['sigma']}")
+    # print(f"年化股息率: {results['q']*100:.2f}%")
+    # print(f"无风险利率: {results['r']*100:.2f}%")
+
+    # 计算滚动期间的结果
+    print("\n滚动期间结果:")
+    df_rolling = calculate_rolling_periods(bank='WFC')
+    print(df_rolling)
+
+    # 计算滚动期间的结果
+    print("\n滚动期间结果:")
+    df_rolling = calculate_rolling_periods(bank='C')
+    print(df_rolling)

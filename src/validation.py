@@ -40,14 +40,14 @@ params['K'] = round(params['s0'], -1)
 base_params.update(params)
 
 # ==== Step 1: 生成 Monte Carlo 数据 / Generate Monte Carlo Data ====
-time_stemp = '1013_2033'
+mode = 'mixed'
 
 t1 = time()
 paths, payoffs, params_array = generate_training_data(**base_params)
 t2 = time()
 
 # ==== 加载模型与Scaler / Load Model & Scaler ====
-model_path = f'models/chooser_option_mlp_model_{time_stemp}.h5'
+model_path = f'models/chooser_option_mlp_model_{mode}.h5'
 
 try:
     print("开始加载模型 / Loading model...")
@@ -55,7 +55,7 @@ try:
     print("模型加载成功 / Model loaded successfully")
 
     print("开始加载Scaler / Loading scaler...")
-    X_scaler = joblib.load(f'scalers/X_scaler_{time_stemp}.pkl')
+    X_scaler = joblib.load(f'scalers/X_scaler_{mode}.pkl')
     print("Scaler加载成功 / Scaler loaded successfully")
 
 except Exception as e:
